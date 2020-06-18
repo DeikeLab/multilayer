@@ -1,0 +1,20 @@
+#SET FILES OF INTEREST 
+SRC_FILES = $(addsuffix .c,$(OUTPUT))
+MPI_FILES = $(addprefix _,$(SRC_FILES))
+OBJ_FILES = $(addsuffix .o,$(basename $(SRC_FILES)))
+OUT_FOLDER = $(addprefix ./f,$(OUTPUT))
+
+#SET C FLAGS AND BASILISK COMPILER, LINKING FLAGS
+CC = gcc
+CFLAGS += -source -Wall -O2 -D_MPI=1 -DLAYERS=1
+MPICCFLAGS += -Wall -std=c99 -O2 -D_MPI=1
+BAS=qcc
+MPICC = mpicc
+LDFLAGS = -L${BASILISK}/ppr -lppr -lgfortran -lm 
+OPENGLIBS = -L/usr/lib/gcc/x86_64-linux-gnu/7 -L${BASILISK}/gl -lfb_osmesa -lglutils -lGLU -lOSMesa
+OPENGLINC = ${BASILISK}
+
+#MAKE COMMAND: TAKES ARGUMENT AND MAKES EXECUTABLE IN DESIRED FOLDER
+$(OUTPUT): 
+	$(BAS) $(CFLAGS) $(SRC_FILES)
+	$(MPICC) $(MPICCFLAGS) $(MPI_FILES) -I$(OPENGLINC) -o $(OUT_FOLDER)/$(OUTPUT) $(OPENLIBS) $(LDFLAGS)

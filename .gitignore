@@ -1,0 +1,13 @@
+*.dat
+*.ppm
+*.mp4
+*.png
+*surface*/*
+*.out
+dump*
+slurm*.out
+*\~
+\_*
+\#*\#
+f*/*
+*/f*/*
