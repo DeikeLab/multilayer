@@ -4,9 +4,9 @@
  */
 
 #include "grid/multigrid.h"
-#include "layered/hydro.h"
+#include "layered/hydro_test.h"
 #include "layered/nh.h"
-#include "layered/remap.h"
+#include "layered/remap_test.h"
 #include "layered/perfs.h"
 #include "input.h"
 #include "output_mpi.h"
@@ -126,7 +126,7 @@ int main(int argc, char * argv[])
   N = 1 << LEVEL_data; // start with a grid of 128
   nl = NLAYER;
   G = g_;
-  nu = 1/40000.;
+  nu = 0;
   CFL_H = 1; // Smaller time step
   run();
 }
@@ -134,7 +134,6 @@ int main(int argc, char * argv[])
 /**
 The intial conditions for the free-surface and velocity are given by
 the input field. */
-
 
 event init (i = 0)
 {
@@ -165,7 +164,6 @@ event init (i = 0)
 			sprintf (s, "w%d", ii+1);
 			scalar w_temp = lookup_field (s);
 			read_xy_float (filename_w, w_temp, LEVEL_data);
-			fprintf(stderr, "Read in velocity, layer index = %d!\n", ii);
 	}
   foreach() {
 		foreach_layer () 
@@ -179,8 +177,12 @@ event init (i = 0)
 We log the evolution of kinetic and potential energy.
 */
 
-event logfile (i++)
+event energy_before_remap (i++, last)
 {
+	if (i==10) {
+		fprintf(stderr, "energy output before remap!\n");
+		fflush(stderr);
+	}
   double ke = 0., gpe = 0.;
   foreach (reduction(+:ke) reduction(+:gpe)) {
 		double zc = zb[];
@@ -193,8 +195,31 @@ event logfile (i++)
       zc += h[];
 		}
   }
-	static FILE * fp = fopen("energy.dat","w");
-  fprintf (fp, "%g %g %g\n", t, ke/2., g_*gpe + 306250);
+	static FILE * fp = fopen("energy_before_remap.dat","w");
+  fprintf (fp, "%g %g %g\n", t, ke/2., g_*gpe);
+  fflush (fp);
+}
+
+event energy_after_remap (i++, last)
+{
+	if (i==10) {
+		fprintf(stderr, "energy output after remap!\n");
+		fflush(stderr);
+	}
+  double ke = 0., gpe = 0.;
+  foreach (reduction(+:ke) reduction(+:gpe)) {
+		double zc = zb[];
+		foreach_layer () {
+		  double norm2 = sq(w[]);
+      foreach_dimension()
+			  norm2 += sq(u.x[]);
+      ke += norm2*h[]*dv();
+      gpe += (zc + h[]/2.)*h[]*dv();
+      zc += h[];
+		}
+  }
+	static FILE * fp = fopen("energy_after_remap.dat","w");
+  fprintf (fp, "%g %g %g\n", t, ke/2., g_*gpe);
   fflush (fp);
 }
 
